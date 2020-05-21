@@ -1,3 +1,4 @@
+console.log("Entered app.js");
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -11,7 +12,10 @@ var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.engine("html", require("ejs").renderFile);
+app.set('view engine', 'html');
+//app.set('view engine', 'jade');
+
 
 app.use(logger('dev'));
 app.use(express.json());

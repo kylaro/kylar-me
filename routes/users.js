@@ -1,3 +1,5 @@
+console.log("Entered users.js");
+
 var express = require('express');
 var router = express.Router();
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-
+console.log("Entered www");
 /**
  * Module dependencies.
  */
