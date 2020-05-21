@@ -1,7 +1,10 @@
-//require("SVG")
+
 var scrollbarwidth = 20;
 var stroke_color = "green"
 var colors = [""]
+
+var socket = io()
+socket.on("newline", drawFromText)
 function resizeIt(){
     const canvas = document.querySelector("#kylar-canvas");
 
@@ -14,9 +17,9 @@ function resizeIt(){
     canvas.setAttribute("width", window.innerWidth-scrollbarwidth+"px");
     canvas.setAttribute("height", window.innerHeight-scrollbarwidth*2+"px");
 }
-
+const canvas = document.querySelector("#kylar-canvas");
 function handlePainting(){
-    const canvas = document.querySelector("#kylar-canvas");
+
     //const ctx = canvas.getContext("2d");
 
     let drawing = false;
@@ -42,7 +45,7 @@ function handlePainting(){
     var new_time = 0;
     var in_time = 0;
 
-    var max_line_width = 10;
+    var max_line_width = 13;
     var line_width = max_line_width;
 
     var count = 0
@@ -71,7 +74,7 @@ function handlePainting(){
         if(distance_moved < 5){
             return;
         }
-        distance_moved -= 4;
+        distance_moved -= 4.7;
 
 
         /* //debugging code
@@ -83,7 +86,7 @@ function handlePainting(){
             count = 0;
         }*/
         distance_moved = distance_moved > distance_max ? distance_max: distance_moved;
-        line_width = (( distance_max/(distance_moved*15)**.5 ) + line_width*2)/3.0
+        line_width = (( distance_max/(distance_moved*15)**.5 ) + line_width*7)/8.0
         line_width = line_width > max_line_width ? max_line_width : line_width;
 
         //console.log(distance_moved, in_time);
@@ -110,15 +113,32 @@ function handlePainting(){
         ctx.moveTo(x - line_width, y - line_width);
         */
 
+        //SVG lines
         var newLine = document.createElementNS('http://www.w3.org/2000/svg','line');
-        newLine.setAttribute('id',"line_"+Date.now());
+        newLine.setAttribute('id',""+Date.now());
         newLine.setAttribute('x1',x+'');
         newLine.setAttribute('y1',y+'');
         newLine.setAttribute('x2',new_x+'');
         newLine.setAttribute('y2',new_y+'');
         newLine.setAttribute("stroke", stroke_color)
         newLine.setAttribute("stroke-width", line_width)
+        newLine.setAttribute( "stroke-linecap","round" )
+
+        //send to server?
+
+        let req = new XMLHttpRequest()
+        req.open("POST", "/update", true)
+        newlinestr = x + " " + y + " " + new_x + " "+ new_y + " " +stroke_color + " " +line_width
+
+        req.setRequestHeader("superline", newlinestr)
+        //req.superline = superline
+        console.log(newLine.textContent)
+        //req.onreadystatechange = ()=>{console.log(req.responseText)}
+        req.send()
+
+
         canvas.append(newLine);
+        socket.emit("message", newlinestr)
 
         x = new_x;
         y = new_y;
@@ -130,9 +150,43 @@ function handlePainting(){
     canvas.addEventListener("click", draw)
 }
 
+function drawFromText(text){
+    console.log("drawing: "+ text)
+    let commands = text.split(',')
+    commands.forEach( val => {
+        if(val.length > 10){
+            let line = val.split(" ")
+            let newLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+            newLine.setAttribute('id',""+Date.now());
+            newLine.setAttribute('x1',line[0]);
+            newLine.setAttribute('y1', line[1]);
+            newLine.setAttribute('x2',line[2]);
+            newLine.setAttribute('y2',line[3]);
+            newLine.setAttribute("stroke", line[4])
+            newLine.setAttribute("stroke-width", line[5])
+            newLine.setAttribute( "stroke-linecap","round" )
+            canvas.append(newLine);
+        }
+    });
+}
+
+function getAllThatHasComeBefore(){
+    let req = new XMLHttpRequest()
+    req.open("POST", "/update", true)
+    req.setRequestHeader("superline", "loading")
+    req.onreadystatechange = ()=>{drawFromText(req.responseText)}
+    req.send()
+}
+
+
 window.addEventListener("load", () => {
     resizeIt();
+    getAllThatHasComeBefore();
     handlePainting();
+
+    do {
+        stroke_color = CSS_COLOR_NAMES[Math.floor(Math.random() * CSS_COLOR_NAMES.length)]
+    } while(stroke_color == "AntiqueWhite" || stroke_color == "LightYellow" || stroke_color == "White" || stroke_color == "Ivory" || stroke_color == "LightCyan" || stroke_color == "WhiteSmoke" || stroke_color == "FloralWhite" || stroke_color == "LightGoldenRodYellow" || stroke_color == "Yellow" || stroke_color == "MintCream" || stroke_color == "GhostWhite" || stroke_color == "HoneyDew" || stroke_color == "Azure" || stroke_color == "Snow")
 })
 
 
@@ -290,6 +344,7 @@ const CSS_COLOR_NAMES = [
     "Yellow",
     "YellowGreen",
 ];
+
 
 var possible_colors = []
 
